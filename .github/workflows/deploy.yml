@@ -1,0 +1,45 @@
+# Build the site with vanilla Jekyll (so kramdown-math-katex works)
+# and force-push the built `_site/` as a single orphan commit to a
+# separate public output repo. Pages then serves that branch.
+#
+# See README "Recommended setup: private source, public deploy" for
+# the full migration walkthrough.
+#
+# Required secrets (set on this source repo):
+#   PAGES_DEPLOY_TOKEN  Fine-grained PAT scoped to the OUTPUT repo
+#                       with `Contents: read and write`. Rotate yearly.
+#
+# Required edits below: external_repository, cname.
+
+name: Build and deploy to Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Build site
+        run: bundle exec jekyll build --safe
+
+      - name: Deploy to public Pages repo
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+          external_repository: your-username/your-username.github.io
+          publish_branch: gh-pages
+          publish_dir: ./_site
+          force_orphan: true
+          # cname: yourdomain.com   # uncomment if using a custom domain
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'

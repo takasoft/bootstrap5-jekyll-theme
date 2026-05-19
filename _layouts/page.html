@@ -1,0 +1,15 @@
+---
+layout: default
+---
+
+{% if page.filetype == "html" %}
+<div class="page">
+  {{ content }}
+</div>
+{% else %}
+<div class="page">
+  <div class="container">
+      {{ content }}
+  </div>
+</div>
+{% endif%}
