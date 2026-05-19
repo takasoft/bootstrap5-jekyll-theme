@@ -1,0 +1,48 @@
+# Permalinks
+permalink:        /:title
+
+# Setup — replace these with your own values
+title:            Bootstrap 5 Jekyll Theme
+tagline:          A simple, modern Bootstrap 5 starter for Jekyll
+description:      A simple, modern Bootstrap 5 starter for Jekyll
+url:              https://your-username.github.io
+baseurl:          /bootstrap5-jekyll-theme
+rawurl:
+
+# Cloudflare Web Analytics token (privacy-friendly, no cookies, no
+# consent banner needed). Set to enable; leave commented out to disable.
+# Snippet lives in _includes/footer.html, conditional on this key.
+# cloudflare_analytics_token:
+
+# Google Analytics 4 measurement ID (e.g. G-XXXXXXXXXX). Set to enable;
+# leave commented out to disable. Snippet in _includes/footer.html.
+# google_analytics:
+
+# Render LaTeX math at build time via kramdown + KaTeX. The output
+# is plain HTML+CSS — no client-side JS runs to display equations.
+# Requires the `kramdown-math-katex` gem (see Gemfile) and Node.js on
+# the build machine. _includes/head.html auto-detects math by scanning
+# the page's rendered content for KaTeX markup, so no front-matter flag
+# is required to opt a post in.
+kramdown:
+  math_engine: katex
+
+# Required plugins (also listed in Gemfile under :jekyll_plugins)
+plugins:
+  - jekyll-paginate
+
+# Pagination number
+paginate:         10
+
+# category page
+collections:
+  category:
+    output: true
+
+defaults:
+  -
+    scope:
+      path: ""
+      type: category
+    values:
+      layout: "category"

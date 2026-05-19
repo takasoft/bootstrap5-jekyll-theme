@@ -1,0 +1,35 @@
+---
+layout: default
+---
+
+<div class="container">
+  <div class="post">
+    <h1 class="post-title">{{ page.title }}</h1>
+    {% if page.image %}
+      {% if page.hideTnPost %}
+      {% else %}
+      <img src="{{ site.url }}{{ site.baseurl }}{{ page.image }}" class="postthumbnail">
+      {% endif%}
+      <br>
+    {% endif %}
+    <span class="post-info">
+      <span class="post-date">
+        <i class="fa fa-calendar"></i>
+        <time class="entry-date published" datetime="{{ page.date | date_to_xmlschema}}">
+          {{ page.date | date: "%Y-%m-%d" }}
+        </time>
+      </span>
+      <span class="post-category">
+        {% for category in page.categories %}
+        <i class="fa fa-folder"></i>
+        <a class="post-category-link" href="{{ site.url }}{{ site.baseurl }}/category/{{ category }}">
+          {{ category }}
+        </a>
+        {% endfor %}
+      </span>
+    </span>
+    {{ content }}
+  </div>
+
+  {% include related-posts.html %}
+</div>
