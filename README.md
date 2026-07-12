@@ -56,7 +56,7 @@ The included `.github/workflows/deploy.yml` is the workflow from that post, ligh
 
 5. **Edit `_config.yml`**: update `title`, `tagline`, `description`, `url`. Set `baseurl: ""` for a user-site (apex) deployment, or `baseurl: /repo-name` for a project site.
 
-6. **Push to `master`.** The workflow runs `jekyll build` (with `kramdown-math-katex`) and force-pushes `_site/` to the public repo's `gh-pages` branch.
+6. **Push to `main`.** The workflow runs `jekyll build` (with `kramdown-math-katex`) and force-pushes `_site/` to the public repo's `gh-pages` branch.
 
 7. **Enable Pages** on the public repo: `Settings → Pages → Source → gh-pages / (root)`.
 
