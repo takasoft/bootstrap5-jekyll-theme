@@ -6,8 +6,8 @@
 # the full migration walkthrough.
 #
 # Required secrets (set on this source repo):
-#   PAGES_DEPLOY_TOKEN  Fine-grained PAT scoped to the OUTPUT repo
-#                       with `Contents: read and write`. Rotate yearly.
+#   PAGES_DEPLOY_KEY  Private SSH key whose public key is registered as a
+#                     writable deploy key on the OUTPUT repo only.
 #
 # Required edits below: external_repository, cname.
 
@@ -17,6 +17,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build-deploy:
@@ -29,13 +32,18 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
+      - name: Check theme
+        run: bundle exec ruby tests/theme_test.rb
+
       - name: Build site
+        env:
+          JEKYLL_ENV: production
         run: bundle exec jekyll build --safe
 
       - name: Deploy to public Pages repo
         uses: peaceiris/actions-gh-pages@v4
         with:
-          personal_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+          deploy_key: ${{ secrets.PAGES_DEPLOY_KEY }}
           external_repository: your-username/your-username.github.io
           publish_branch: gh-pages
           publish_dir: ./_site

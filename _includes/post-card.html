@@ -1,0 +1,31 @@
+{% comment %}
+  Shared by the chronological listing and the optional first-page pinned section.
+  Keep categories here so promoting a post does not change its metadata.
+{% endcomment %}
+<div class="post{% if include.pinned %} post-pinned{% endif %}">
+  {% if include.pinned %}<span class="pinned-badge"><i class="fa fa-thumb-tack" aria-hidden="true"></i> Pinned</span>{% endif %}
+  <a href="{{ include.post.url | relative_url }}">
+    <h2 class="post-title">{{ include.post.title | escape }}</h2>
+    {% if include.post.image %}
+      <img src="{{ include.post.image | relative_url | escape }}" class="homethumbnail" alt="{{ include.post.image_alt | default: '' | escape }}">
+    {% endif %}
+  </a>
+
+  <div class="post-info">
+    <span class="post-date">
+      <i class="fa fa-calendar" aria-hidden="true"></i>
+      <time class="entry-date published" datetime="{{ include.post.date | date_to_xmlschema }}">
+        {{ include.post.date | date: "%Y-%m-%d" }}
+      </time>
+    </span>
+    <span class="post-category">
+      {% for category in include.post.categories %}
+        <i class="fa fa-folder" aria-hidden="true"></i>
+        <a class="post-category" href="{{ '/category/' | append: category | relative_url | escape }}">{{ category | escape }}</a>
+      {% endfor %}
+    </span>
+  </div>
+
+  <div class="entry">{{ include.post.excerpt }}</div>
+  <a href="{{ include.post.url | relative_url }}" class="read-more">Read more</a>
+</div>

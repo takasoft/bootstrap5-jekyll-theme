@@ -15,7 +15,7 @@ filetype: html
 				<h3 class="archive-page-date" style="margin-top: 20px">{{ currentDate }}</h3>
 				{% assign myDate = currentDate %}
 			{% endif %}
-			<a class="list-group-item list-group-item-action" href="{{ site.url }}{{ site.baseurl }}{{ post.url }}">
+			<a class="list-group-item list-group-item-action" href="{{ post.url | relative_url }}">
 				<span>{{ post.date | date: "%Y-%m-%d" }}</span> &nbsp; &nbsp; {{ post.title }}
 			</a>
 		{% endfor %}

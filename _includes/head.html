@@ -2,36 +2,70 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
 
-  <meta name="description" content="{{ site.description }}">
+  {% comment %}
+    Share the site overview on the homepage, not the first post's excerpt.
+    Images are optional so a new site never advertises a missing branded asset.
+  {% endcomment %}
+  {% assign social_title = page.title | default: site.title %}
+  {% if page.title == 'Home' %}{% assign social_title = site.title %}{% endif %}
+  {% assign social_type = 'website' %}
+  {% assign social_description = page.description | default: site.description %}
+  {% if page.layout == 'post' %}
+    {% assign social_type = 'article' %}
+    {% assign social_description = page.description | default: page.excerpt | default: site.description %}
+  {% endif %}
+  {% assign social_description = social_description | strip_html | normalize_whitespace | strip | truncate: 200 %}
+  {% assign social_image = page.image | default: site.social_image %}
+
+  {% comment %}Markdown excerpts already encode entities, so preserve them when escaping attributes.{% endcomment %}
+  <meta name="description" content="{{ social_description | escape_once }}">
+  <meta property="og:type" content="{{ social_type }}">
+  <meta property="og:site_name" content="{{ site.title | escape }}">
+  <meta property="og:title" content="{{ social_title | escape }}">
+  <meta property="og:description" content="{{ social_description | escape_once }}">
+  <meta property="og:url" content="{{ page.url | absolute_url | escape }}">
+  <meta name="twitter:title" content="{{ social_title | escape }}">
+  <meta name="twitter:description" content="{{ social_description | escape_once }}">
+  {% if social_image and social_image != empty %}
+  <meta property="og:image" content="{{ social_image | absolute_url | escape }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="{{ social_image | absolute_url | escape }}">
+  {% else %}
+  <meta name="twitter:card" content="summary">
+  {% endif %}
 
   <!-- Enable responsiveness on mobile devices-->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
   <title>
+    {% assign site_name = site.title %}
+    {% unless jekyll.environment == 'production' %}
+      {% assign site_name = site_name | append: ' (dev)' %}
+    {% endunless %}
     {% if page.title == "Home" %}
       {% if site.tagline %}
-        {{ site.title }} - {{ site.tagline }}
+        {{ site_name | escape }} - {{ site.tagline | escape }}
       {% else %}
-        {{ site.title }}
+        {{ site_name | escape }}
       {% endif %}
     {% else %}
-      {{ page.title }} - {{ site.title }}
+      {{ page.title | escape }} - {{ site_name | escape }}
     {% endif %}
   </title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="{{ site.url }}{{ site.baseurl }}/public/css/toc.css">
-  <link rel="stylesheet" href="{{ site.url }}{{ site.baseurl }}/public/css/main.css">
-  <link rel="stylesheet" href="{{ site.url }}{{ site.baseurl }}/public/css/syntax.css">
+  <link rel="stylesheet" href="{{ '/public/css/toc.css' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/public/css/main.css' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/public/css/syntax.css' | relative_url }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous">
 
   <!-- Icons -->
-  <link rel="apple-touch-icon" href="{{ site.url }}{{ site.baseurl }}/public/apple-touch-icon.png">
-  <link rel="shortcut icon" href="{{ site.url }}{{ site.baseurl }}/public/favicon.ico">
+  <link rel="apple-touch-icon" href="{{ '/public/apple-touch-icon-144-precomposed.png' | relative_url }}">
+  <link rel="shortcut icon" href="{{ '/public/favicon.ico' | relative_url }}">
 
   <!-- RSS -->
-  <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+  <link rel="alternate" type="application/atom+xml" title="Atom" href="{{ '/atom.xml' | relative_url }}">
 
   {% if page.content contains 'class="katex' %}
   <!-- KaTeX CSS for math rendered at build time by kramdown's katex engine.

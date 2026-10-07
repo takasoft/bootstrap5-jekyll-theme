@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-faded">
   <div class="container">
-    <a class="navbar-brand" href="{{ site.url }}{{ site.baseurl }}">{{ site.title }}</a>
+    <a class="navbar-brand" href="{{ '/' | relative_url }}">{{ site.title }}</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -8,7 +8,7 @@
     <div class="collapse navbar-collapse" id="navbarNavDropdown">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" href="{{ site.url }}{{ site.baseurl }}">
+          <a class="nav-link" href="{{ '/' | relative_url }}">
             Home <span class="visually-hidden">(current)</span>
           </a>
         </li>
@@ -17,7 +17,7 @@
           {% if node.title != null %}
             {% if node.layout == "page" %}
             <li class="nav-item {% if page.url == node.url %}active{% endif %}">
-              <a class="nav-link" href="{{ site.url }}{{ site.baseurl }}{{ node.url }}">
+              <a class="nav-link" href="{{ node.url | relative_url }}">
                 {{ node.title }}
               </a>
             </li>

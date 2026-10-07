@@ -124,6 +124,23 @@ img.postthumbnail {
   margin-bottom: 2em;
 }
 
+.pinned-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b4fd6;
+  background: #efeaff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-bottom: 0.4em;
+}
+
+.pinned-badge .fa {
+  margin-right: 4px;
+}
+
 /* Blog post or page title */
 .page-title,
 .post-title,

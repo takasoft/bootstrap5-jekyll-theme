@@ -4,101 +4,65 @@ title: Home
 ---
 
 <div class="content container">
-
   {% if site.headline %}
   <div class="post">
-      {% include headline.html %}
-      <hr>
+    {% include headline.html %}
+    <hr>
   </div>
   {% endif %}
-  
-  <div class="posts">
-    {% for post in paginator.posts %}
-    <div class="post">
-      <a href="{{ site.url }}{{ site.baseurl }}{{ post.url }}">
-        <h2 class="post-title">
-          {{ post.title }}
-        </h2>
-        {% if post.image %}
-          <img src="{{ site.url }}{{ site.baseurl }}{{ post.image }}" class="homethumbnail">
-        {% endif %}
-      </a>
-  
-      <div class="post-info">
-        <span class="post-date">
-          <i class="fa fa-calendar"></i>
-          <time class="entry-date published" datetime="{{ post.date | date_to_xmlschema}}">
-            {{ post.date | date: "%Y-%m-%d" }}
-          </time>
-        </span>
-        <span class="post-category">
-          {% for category in post.categories %}
-            <i class="fa fa-folder"></i>
-            <a class="post-category" href="{{ site.url }}{{ site.baseurl }}/category/{{ category }}">
-              {{ category }}
-            </a>
-          {% endfor %}
-        </span>
-      </div>
-  
-      <div class="entry">
-        {{ post.excerpt }}
-      </div>
-  
-      <a href="{{ site.url }}{{ site.baseurl }}{{ post.url }}" class="read-more">Read more</a>
+
+  {% assign first_page = false %}
+  {% if paginator.page == 1 or paginator.page == nil %}
+    {% assign first_page = true %}
+    {% assign pinned_posts = site.posts | where: "pinned", true %}
+    {% if pinned_posts.size > 0 %}
+    <div class="pinned-posts">
+      {% for post in pinned_posts %}
+        {% include post-card.html post=post pinned=true %}
+        <hr>
+      {% endfor %}
     </div>
-    <hr>
+    {% endif %}
+  {% endif %}
+
+  <div class="posts">
+    {% assign listed_posts = paginator.posts | default: site.posts %}
+    {% for post in listed_posts %}
+      {% comment %}
+        Suppress duplicates only on the first page. Jekyll still paginates all
+        posts, so removing pins from later pages would leave gaps or empty pages.
+      {% endcomment %}
+      {% if first_page and post.pinned == true %}{% continue %}{% endif %}
+      {% include post-card.html post=post %}
+      <hr>
     {% endfor %}
   </div>
-  
-  <!-- Pagination -->
-  <nav aria-label="pagenation navbar">
+
+  {% if paginator %}
+  <nav aria-label="Post pagination">
     <ul class="pagination justify-content-center pagination-lg">
-      {% if paginator.previous_page %}
-        {% if paginator.page == 2 %}
-          <li class="page-item">
-            <a class="page-link" href="{{ site.url }}{{ site.baseurl }}/">
-              <i class="fa fa-arrow-left"></i>
-            </a>
-          </li>
+      <li class="page-item{% unless paginator.previous_page %} disabled{% endunless %}">
+        {% if paginator.previous_page %}
+          <a class="page-link" href="{{ paginator.previous_page_path | relative_url }}" aria-label="Previous page">
+            <i class="fa fa-arrow-left" aria-hidden="true"></i>
+          </a>
         {% else %}
-          <li class="page-item">
-            <a class="page-link" href="{{ site.url }}{{ site.baseurl }}/page{{paginator.previous_page}}">
-              <i class="fa fa-arrow-left"></i>
-            </a>
-          </li>
+          <span class="page-link" aria-disabled="true" aria-label="Previous page"><i class="fa fa-arrow-left" aria-hidden="true"></i></span>
         {% endif %}
-      {% else %}
-        <li class="page-item disabled">
-          <a class="page-link" href="{{ site.url }}{{ site.baseurl }}/">
-            <i class="fa fa-arrow-left"></i>
-          </a>
-        </li>
-      {% endif %}
-  
-      <li class="page-item disabled">
-        <a class="page-link" href="{{ site.url }}{{ site.baseurl }}/">
-          Page {{ paginator.page }} / {{ paginator.total_pages }}
-        </a>
       </li>
-  
-      {% if paginator.next_page %}
-        <li class="page-item">
-          <a class="page-link" href="{{ site.url }}{{ site.baseurl }}/page{{paginator.next_page}}">
-            <i class="fa fa-arrow-right"></i>
+      <li class="page-item disabled">
+        <span class="page-link" aria-current="page">Page {{ paginator.page }} / {{ paginator.total_pages }}</span>
+      </li>
+      <li class="page-item{% unless paginator.next_page %} disabled{% endunless %}">
+        {% if paginator.next_page %}
+          <a class="page-link" href="{{ paginator.next_page_path | relative_url }}" aria-label="Next page">
+            <i class="fa fa-arrow-right" aria-hidden="true"></i>
           </a>
-        </li>
-      {% else %}
-        <li class="page-item disabled">
-          <a class="page-link" href="{{ site.url }}{{ site.baseurl }}/">
-            <i class="fa fa-arrow-right"></i>
-          </a>
-        </li>
-      {% endif %}
-  
-      
+        {% else %}
+          <span class="page-link" aria-disabled="true" aria-label="Next page"><i class="fa fa-arrow-right" aria-hidden="true"></i></span>
+        {% endif %}
+      </li>
     </ul>
   </nav>
-  
+  {% endif %}
 </div>
-
