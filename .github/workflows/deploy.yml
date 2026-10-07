@@ -1,15 +1,9 @@
-# Build the site with vanilla Jekyll (so kramdown-math-katex works)
-# and force-push the built `_site/` as a single orphan commit to a
-# separate public output repo. Pages then serves that branch.
-#
-# See README "Recommended setup: private source, public deploy" for
-# the full migration walkthrough.
-#
-# Required secrets (set on this source repo):
-#   PAGES_DEPLOY_TOKEN  Fine-grained PAT scoped to the OUTPUT repo
-#                       with `Contents: read and write`. Rotate yearly.
-#
-# Required edits below: external_repository, cname.
+# Public fork (default): enable Pages with the GitHub Actions source.
+# Private source: set PAGES_OUTPUT_REPOSITORY to owner/public-output-repo
+# in repository variables and PAGES_DEPLOY_KEY in repository secrets.
+# Optionally set PAGES_CUSTOM_DOMAIN for the external output repository.
+# Both paths build with vanilla Jekyll so build-time KaTeX works.
+# See README "Choose a publishing path" for the complete setup.
 
 name: Build and deploy to Pages
 
@@ -17,6 +11,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: read
+
+# Serialize both publishing paths without cancelling a deployment in flight.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build-deploy:
@@ -26,20 +29,70 @@ jobs:
 
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          # Read Ruby from .ruby-version so local and CI builds agree.
+          bundler: '4.0.22'
           bundler-cache: true
 
+      - name: Validate publishing mode
+        env:
+          OUTPUT_REPOSITORY: ${{ vars.PAGES_OUTPUT_REPOSITORY }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_PRIVATE: ${{ github.event.repository.private }}
+          DEPLOY_KEY: ${{ secrets.PAGES_DEPLOY_KEY }}
+        run: |
+          ruby <<'RUBY'
+          output = ENV.fetch("OUTPUT_REPOSITORY")
+          if output.empty?
+            abort "::error::Private source requires PAGES_OUTPUT_REPOSITORY and PAGES_DEPLOY_KEY." if ENV.fetch("SOURCE_PRIVATE") == "true"
+          else
+            abort "::error::PAGES_OUTPUT_REPOSITORY must be owner/repo." unless output.match?(%r{\A[^/\s]+/[^/\s]+\z})
+            abort "::error::External output must not be the source repository." if output.casecmp?(ENV.fetch("SOURCE_REPOSITORY"))
+            abort "::error::Set the PAGES_DEPLOY_KEY repository secret for external publishing." if ENV.fetch("DEPLOY_KEY").strip.empty?
+          end
+          RUBY
+
+      - name: Configure Pages for public fork
+        if: ${{ vars.PAGES_OUTPUT_REPOSITORY == '' }}
+        uses: actions/configure-pages@v5
+
+      - name: Check theme
+        run: bundle exec ruby tests/theme_test.rb
+
       - name: Build site
+        env:
+          JEKYLL_ENV: production
         run: bundle exec jekyll build --safe
 
-      - name: Deploy to public Pages repo
+      - name: Upload public Pages artifact
+        if: ${{ vars.PAGES_OUTPUT_REPOSITORY == '' }}
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./_site
+
+      - name: Deploy to external public Pages repo
+        if: ${{ vars.PAGES_OUTPUT_REPOSITORY != '' }}
         uses: peaceiris/actions-gh-pages@v4
         with:
-          personal_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
-          external_repository: your-username/your-username.github.io
+          deploy_key: ${{ secrets.PAGES_DEPLOY_KEY }}
+          external_repository: ${{ vars.PAGES_OUTPUT_REPOSITORY }}
           publish_branch: gh-pages
           publish_dir: ./_site
           force_orphan: true
-          # cname: yourdomain.com   # uncomment if using a custom domain
+          cname: ${{ vars.PAGES_CUSTOM_DOMAIN }}
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
+
+  deploy-public:
+    if: ${{ vars.PAGES_OUTPUT_REPOSITORY == '' }}
+    needs: build-deploy
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy public fork to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

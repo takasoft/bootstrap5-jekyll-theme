@@ -8,7 +8,7 @@ layout: default
     {% if page.image %}
       {% if page.hideTnPost %}
       {% else %}
-      <img src="{{ site.url }}{{ site.baseurl }}{{ page.image }}" class="postthumbnail">
+      <img src="{{ page.image | relative_url | escape }}" class="postthumbnail" alt="{{ page.image_alt | default: '' | escape }}">
       {% endif%}
       <br>
     {% endif %}
@@ -22,7 +22,7 @@ layout: default
       <span class="post-category">
         {% for category in page.categories %}
         <i class="fa fa-folder"></i>
-        <a class="post-category-link" href="{{ site.url }}{{ site.baseurl }}/category/{{ category }}">
+        <a class="post-category-link" href="{{ '/category/' | append: category | relative_url | escape }}">
           {{ category }}
         </a>
         {% endfor %}

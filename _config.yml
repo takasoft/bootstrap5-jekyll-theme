@@ -9,6 +9,10 @@ url:              https://your-username.github.io
 baseurl:          /bootstrap5-jekyll-theme
 rawurl:
 
+# Optional fallback image for social link previews. Use a site-relative path
+# or an absolute HTTPS URL. A post/page's image takes precedence.
+# social_image: /public/assets/social-preview.png
+
 # Cloudflare Web Analytics token (privacy-friendly, no cookies, no
 # consent banner needed). Set to enable; leave commented out to disable.
 # Snippet lives in _includes/footer.html, conditional on this key.
@@ -46,3 +50,21 @@ defaults:
       type: category
     values:
       layout: "category"
+
+# A custom exclude list replaces Jekyll's defaults. Keep dependency/cache
+# directories here so CI never publishes or renders its installed gems.
+exclude:
+  - README.md
+  - .ruby-version
+  - .github
+  - tests/
+  - Gemfile
+  - Gemfile.lock
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/

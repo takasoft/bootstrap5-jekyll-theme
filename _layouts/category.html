@@ -13,7 +13,7 @@ layout: page
 
   {% for post in site.categories[page.category] %}
   <div class="post-preview">
-    <a href="{{ site.url }}{{ site.baseurl }}{{ post.url }}">
+    <a href="{{ post.url | relative_url }}">
       <h3 class="post-title">            
         {{ post.title }}
       </h3>
