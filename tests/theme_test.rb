@@ -192,12 +192,60 @@ RUBY
 end
 
 workflow = YAML.load_file(File.join(ROOT, ".github", "workflows", "deploy.yml"))
-assert(workflow.fetch("permissions") == { "contents" => "read" }, "Workflow token must be read-only")
-steps = workflow.fetch("jobs").fetch("build-deploy").fetch("steps")
+assert(workflow.fetch("permissions") == { "contents" => "read", "pages" => "read" }, "Build token must be read-only")
+assert(workflow.fetch("concurrency") == { "group" => "pages", "cancel-in-progress" => false }, "Publish runs must be serialized")
+jobs = workflow.fetch("jobs")
+steps = jobs.fetch("build-deploy").fetch("steps")
 build = steps.find { |step| step["name"] == "Build site" }
-deploy = steps.find { |step| step["name"] == "Deploy to public Pages repo" }
+deploy = steps.find { |step| step["name"] == "Deploy to external public Pages repo" }
 assert(build.fetch("env").fetch("JEKYLL_ENV") == "production", "Workflow must build for production")
 assert(build.fetch("run").include?("--safe"), "Deployment must use a safe build")
 assert(deploy.fetch("with").fetch("deploy_key") == '${{ secrets.PAGES_DEPLOY_KEY }}', "Deploy key not wired")
 assert(!deploy.fetch("with").key?("personal_token"), "Obsolete deployment token still configured")
+assert(deploy.fetch("with").fetch("external_repository") == '${{ vars.PAGES_OUTPUT_REPOSITORY }}', "External destination must be configurable")
+assert(deploy.fetch("with").fetch("cname") == '${{ vars.PAGES_CUSTOM_DOMAIN }}', "External domain must be configurable")
+assert(deploy.fetch("with").fetch("publish_branch") == "gh-pages", "External output branch changed")
+assert(deploy.fetch("with").fetch("publish_dir") == "./_site", "External deployment must publish only generated output")
+assert(deploy.fetch("with").fetch("force_orphan") == true, "External orphan publishing changed")
+
+# These exact complementary conditions keep the two publishing routes exclusive.
+public_condition = "${{ vars.PAGES_OUTPUT_REPOSITORY == '' }}"
+external_condition = "${{ vars.PAGES_OUTPUT_REPOSITORY != '' }}"
+configure = steps.find { |step| step["uses"] == "actions/configure-pages@v5" }
+upload = steps.find { |step| step["uses"] == "actions/upload-pages-artifact@v4" }
+public_deploy = jobs.fetch("deploy-public")
+assert(configure.fetch("if") == public_condition, "External source must not configure its own Pages")
+assert(upload.fetch("if") == public_condition, "External source must not upload a same-repo Pages artifact")
+assert(upload.fetch("with").fetch("path") == "./_site", "Public artifact must contain only generated output")
+assert(deploy.fetch("if") == external_condition, "Public forks must not request an external deploy key")
+assert(public_deploy.fetch("if") == public_condition, "External mode must skip same-repo deployment")
+assert(public_deploy.fetch("needs") == "build-deploy", "Public deployment must wait for successful artifact upload")
+assert(public_deploy.fetch("permissions") == { "pages" => "write", "id-token" => "write" }, "Public deploy permissions incorrect")
+assert(public_deploy.fetch("environment").fetch("name") == "github-pages", "Pages protection environment missing")
+assert(public_deploy.fetch("steps").one? { |step| step["uses"] == "actions/deploy-pages@v4" }, "Public Pages deployment action missing")
+
+# Execute the workflow's actual Ruby guard without needing Bash or GitHub.
+validation = steps.find { |step| step["name"] == "Validate publishing mode" }
+guard = validation.fetch("run").match(/\Aruby <<'RUBY'\n(.*)\nRUBY\n?\z/m)
+assert(guard, "Publishing guard must remain an executable Ruby block")
+assert(steps.index(validation) < steps.index(configure), "Validate before contacting Pages")
+[
+  ["false", "", "", true, nil],
+  ["true", "", "", false, "Private source requires"],
+  ["true", "example/output", "", false, "PAGES_DEPLOY_KEY"],
+  ["true", "example/output", "synthetic-test-key", true, nil],
+  ["false", "example/output", "synthetic-test-key", true, nil],
+  ["true", "Example/Source", "synthetic-test-key", false, "must not be the source"],
+  ["true", "invalid-target", "synthetic-test-key", false, "must be owner/repo"],
+  ["true", " ", "synthetic-test-key", false, "must be owner/repo"]
+].each do |private_source, target, key, success, error|
+  output, status = Open3.capture2e({
+    "SOURCE_PRIVATE" => private_source,
+    "SOURCE_REPOSITORY" => "example/source",
+    "OUTPUT_REPOSITORY" => target,
+    "DEPLOY_KEY" => key
+  }, RbConfig.ruby, "-e", guard[1])
+  assert(status.success? == success, "Unexpected publishing mode result for #{private_source.inspect}, #{target.inspect}: #{output}")
+  assert(output.include?(error), "Missing setup error: #{error}") if error
+end
 puts "Theme regressions passed."

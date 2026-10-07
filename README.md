@@ -11,7 +11,7 @@ Simple, modern Bootstrap 5 theme for Jekyll. A successor to [Bootstrap-4-Jekyll-
 - **Cloudflare Web Analytics** and **Google Analytics 4** — both controlled by `_config.yml` flags, both off by default
 - Auto-generated **Related Posts** ranked by shared `tags` / `categories`
 - Pagination, category pages, RSS/Atom feed, syntax highlighting
-- Includes a GitHub Actions workflow for the two-repo deploy pattern (private source, public output)
+- Two publishing paths: a public fork, or private source with separate public output
 - Page-aware Open Graph and Twitter cards, with optional preview images
 - Optional pinned posts, without removing categories or numbered pagination
 - Local-preview-safe navigation and assets, including project-site subpaths
@@ -25,7 +25,7 @@ Simple, modern Bootstrap 5 theme for Jekyll. A successor to [Bootstrap-4-Jekyll-
 - Bootstrap 5 attribute renames applied throughout (`data-bs-toggle`, `ms-auto`, `visually-hidden`, etc.)
 - CSS workaround for Bootstrap 5's default link underline on post titles
 - Math rendering moved from client-side MathJax to build-time KaTeX (kramdown's `math_engine: katex`)
-- Default deploy is now Actions-based two-repo setup so build-time math and arbitrary gems just work
+- Both publishing paths use Actions so build-time math and custom gems work
 
 ### Page load: v4 vs v5
 
@@ -40,51 +40,84 @@ Measured against the home page CDN assets (Bootstrap CSS + JS + jQuery + Popper 
 
 Mermaid (~500 KB compressed) is loaded only when the page actually needs it. KaTeX CSS (~26 KB) is loaded only on pages where the layout detects KaTeX markup in the rendered content, and KaTeX fonts download on-demand only when a math glyph is rendered on screen.
 
-## Recommended setup: private source, public deploy
+## Choose a publishing path
 
-This theme defaults to the **two-repo pattern**: keep your Jekyll source in a private repo, build it via GitHub Actions, and force-push the built `_site/` to a separate public repo that GitHub Pages serves. This unlocks build-time math (via `kramdown-math-katex`, which Pages-classic doesn't whitelist) and works for $0 on GitHub Free.
+| Path | Source | Public website | Credentials to configure |
+| --- | --- | --- | --- |
+| **1. Public fork (default)** | A public fork of this theme | Pages on the same repository | None |
+| **2. Private source** | A separate private copy | Pages on a separate public output repository | A dedicated output deploy key |
 
-For the full walkthrough — why Pages won't build private repos on Free, the GitHub Actions workflow, the migration steps, and the gotchas — see: <https://takasoft.io/blog/hosting-private-jekyll-source-on-github-free>.
+Both paths use the included [Actions workflow](.github/workflows/deploy.yml) and
+the same production Jekyll build. The public path does not require a second
+repository, personal access token, or deploy key. Actions is used for that path
+too because Pages' built-in branch builder does not support the
+`kramdown-math-katex` gem.
 
-The included `.github/workflows/deploy.yml` is the workflow from that post, lightly templated. You'll edit two lines (the output repo, and optionally a CNAME).
+### Path 1: Fork and publish publicly
 
-### Quick start
+1. **Fork this repository** into your account. Keep it public. Leave its name unchanged for a project site, or rename it to `<your-username>.github.io` for a user site.
+2. **Edit [_config.yml](_config.yml)** with your title, description, and public URL. Set `url: https://your-username.github.io`. For a project site, set `baseurl: /your-repo-name`. For a user site, set `baseurl: ""`.
+3. **Enable Actions in your fork** from the Actions tab if GitHub asks. Leave the `PAGES_OUTPUT_REPOSITORY` repository variable unset.
+4. **Enable Pages** in the fork's `Settings > Pages`, choosing **GitHub Actions** as the source. Do not select "Deploy from a branch" for this path.
+5. **Run the deployment** from `Actions > Build and deploy to Pages > Run workflow`, or push a change to `main`. The workflow publishes the built site directly to the fork's Pages site.
 
-1. **Create a private source repo from a copy of this theme.** A fork of a public repository cannot be made private. Use a separate repository if you want private source.
+Your source, posts, and Git history remain public. No generated `gh-pages` branch
+is needed. If you renamed the default branch, update the workflow's push trigger.
+For a custom domain, configure it in the fork's Pages settings and update `url`
+and `baseurl` to match.
 
-2. **Create a second public repo** to receive the built site. If you want a user site, name it `<your-username>.github.io`. Initialize with a single empty commit.
+### Path 2: Private source with automatic public output
 
-3. **Create a dedicated SSH deploy key pair** for the output repo. Add the public key in that repo's `Settings → Deploy keys`, with write access enabled. Store the private key only in the source repo's Actions secret `PAGES_DEPLOY_KEY`. Do not reuse another repository's key or commit either credentials or temporary private-key files.
+1. **Create a private source repo from a copy of this theme.** A fork of a public repository cannot be made private. Use a separate repository.
+2. **Create a separate public output repo** for the built website. Use `<your-username>.github.io` for a user site, or another name for a project site. Initialize it with an empty commit.
+3. **Create a dedicated SSH deploy key pair** for the output repo. Add the public key in that repo's `Settings > Deploy keys`, with write access enabled. Store the private key in the source repo's Actions secret `PAGES_DEPLOY_KEY`. Never commit the private key or reuse another repository's key.
+4. **Select external publishing** in the source repo's `Settings > Secrets and variables > Actions > Variables`. Set `PAGES_OUTPUT_REPOSITORY` to `your-username/your-output-repo`. Optionally set `PAGES_CUSTOM_DOMAIN` to your custom domain, without a URL scheme.
+5. **Edit [_config.yml](_config.yml)** for the public output address, not the private source repo. Set `url` to the public origin. Set `baseurl: ""` for a user site or custom domain, or `/your-output-repo` for a project site.
+6. **Enable Actions in the source repo**, then run `Build and deploy to Pages` manually or push to `main`. The workflow publishes only `_site/` to the output repo's `gh-pages` branch as a single orphan commit.
+7. **Enable Pages in the output repo** with **Deploy from a branch**, selecting `gh-pages` and `/ (root)`. Do not enable Pages on the private source repo.
 
-4. **Edit `.github/workflows/deploy.yml`**: set `external_repository:` to your public repo (`your-username/your-username.github.io`), and uncomment `cname:` if you have a custom domain.
+This path supports private source on GitHub Free because Pages serves the public
+output repo. Private-repository Actions usage remains subject to your account's
+included minutes, storage, and spending settings. The website and generated
+files are public even though source history stays private.
 
-5. **Edit `_config.yml`**: update `title`, `tagline`, `description`, `url`. Set `baseurl: ""` for a user-site (apex) deployment, or `baseurl: /repo-name` for a project site.
+### How the workflow selects a path
 
-6. **Push to the source branch configured in the workflow.** The workflow runs `JEKYLL_ENV=production bundle exec jekyll build --safe` and publishes `_site/` to the public repo's `gh-pages` branch as a single orphan commit.
-
-7. **Enable Pages** on the public repo: `Settings → Pages → Source → gh-pages / (root)`.
-
-The workflow's `GITHUB_TOKEN` has read-only access. The deploy key grants write
-access to the separate output repo. It does not expire automatically, so review
-and rotate it when access changes or exposure is suspected. Anyone holding the
-private key can use it outside GitHub Actions.
-
-For an existing token-based deployment, first add the new key and switch the
-workflow. Confirm a successful deployment from the default branch before removing
-the old secret. Removing a secret does not revoke the old token.
-
-The output branch must allow the action's orphan updates. Follow your
-repository's approval and branch policies rather than disabling protections.
+The `PAGES_OUTPUT_REPOSITORY` variable is the switch. Unset means same-repository
+Pages. A value selects external output and skips the same-repository Pages job.
+Private source without that variable fails with a setup message rather than
+silently attempting to publish its own Pages site.
 
 ```mermaid
-flowchart LR
-    Source["Private Jekyll source"] --> Build["Production safe build"]
-    Build --> Output["Public gh-pages output"]
-    Key["Dedicated output deploy key"] --> Output
-    Output --> Pages["GitHub Pages"]
+flowchart TD
+    Source["Jekyll source"] --> Build["Production safe build"]
+    Build --> Mode{"PAGES_OUTPUT_REPOSITORY set?"}
+    Mode -->|No, public fork| Artifact["Pages artifact"]
+    Artifact --> SameRepo["Pages on the public fork"]
+    Mode -->|Yes| Key["Dedicated output deploy key"]
+    Key --> Output["Public output repo: gh-pages"]
+    Output --> ExternalPages["Pages on the output repo"]
 ```
 
-### Local preview
+The build job's `GITHUB_TOKEN` has read-only repository and Pages permissions.
+Only the same-repository deployment job requests `pages: write` and
+`id-token: write`, using the `github-pages` environment. External publishing uses
+the deploy key instead. Existing environment and branch protections still apply.
+
+The output repo must allow the action's orphan updates. Follow your repository's
+approval and branch policies rather than disabling protections. The workflow
+rejects using the source repository as its own external output.
+
+For an existing token-based deployment, configure the output variable and new
+key before switching workflows. Confirm a successful deployment before removing
+the old secret. Removing a secret does not revoke the old token. Deploy keys do
+not expire automatically, and anyone holding the private key can use it outside
+GitHub Actions. Remove temporary key files after secure secret storage.
+
+For background on the private-source pattern, see the
+[private Jekyll hosting walkthrough](https://takasoft.io/blog/hosting-private-jekyll-source-on-github-free).
+
+## Local preview
 
 ```shell
 gem install jekyll bundler
