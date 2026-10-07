@@ -196,6 +196,11 @@ assert(workflow.fetch("permissions") == { "contents" => "read", "pages" => "read
 assert(workflow.fetch("concurrency") == { "group" => "pages", "cancel-in-progress" => false }, "Publish runs must be serialized")
 jobs = workflow.fetch("jobs")
 steps = jobs.fetch("build-deploy").fetch("steps")
+runtime = steps.find { |step| step["uses"] == "ruby/setup-ruby@v1" }.fetch("with")
+assert(!runtime.key?("ruby-version"), "CI must read Ruby from .ruby-version")
+assert(runtime.fetch("bundler") == "4.0.22", "CI Bundler version changed")
+assert(runtime.fetch("bundler-cache") == true, "CI dependency caching disabled")
+assert(RUBY_VERSION == File.read(File.join(ROOT, ".ruby-version")).strip, "Runtime must match .ruby-version")
 build = steps.find { |step| step["name"] == "Build site" }
 deploy = steps.find { |step| step["name"] == "Deploy to external public Pages repo" }
 assert(build.fetch("env").fetch("JEKYLL_ENV") == "production", "Workflow must build for production")

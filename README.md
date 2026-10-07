@@ -120,18 +120,24 @@ For background on the private-source pattern, see the
 ## Local preview
 
 ```shell
-gem install jekyll bundler
-bundle install
-bundle exec jekyll serve
+gem install bundler -v 4.0.22
+bundle _4.0.22_ install
+bundle _4.0.22_ exec jekyll serve
 ```
 
 Node.js needs to be on `PATH` (the `kramdown-math-katex` gem calls KaTeX through ExecJS during builds with math). The GitHub Actions runner has Node preinstalled.
 
-Use Ruby 3.3, matching [.ruby-version](.ruby-version). Local browser tabs include
+Use Ruby 4.0.7, matching [.ruby-version](.ruby-version), and Bundler 4.0.22.
+The [Gemfile](Gemfile) and Actions workflow read the same Ruby version file.
+Local browser tabs include
 `(dev)`, while production builds keep the normal site title. Internal navigation
 and assets stay on the current origin, even when `url` names the production site.
 The configured `baseurl` applies to links, icons, pagination, and the Atom feed.
 Social metadata and Atom entry URLs remain absolute for external readers.
+
+Local Bundler configuration and gems under `.bundle/` remain untracked.
+If an existing lockfile selects an older Bundler, run
+`bundle _4.0.22_ update --bundler=4.0.22` before installing.
 
 If Ruby is unavailable on Windows, start Docker Desktop and run from the
 repository directory in PowerShell:
@@ -140,15 +146,18 @@ repository directory in PowerShell:
 docker run --rm --name jekyll-theme-preview `
   --publish 127.0.0.1:4000:4000 `
   --mount "type=bind,source=$($PWD.Path),target=/site" `
-  --mount type=volume,source=jekyll-theme-gems,target=/usr/local/bundle `
-  --workdir /site --env JEKYLL_ENV=development ruby:3.3 sh -lc `
-  'apt-get update -qq && apt-get install -y --no-install-recommends nodejs && bundle install --jobs 4 --retry 2 && bundle exec jekyll serve --host 0.0.0.0 --port 4000 --force_polling'
+  --mount type=volume,source=jekyll-theme-ruby4-gems,target=/usr/local/bundle `
+  --workdir /site --env JEKYLL_ENV=development --env BUNDLE_PATH=/usr/local/bundle `
+  ruby:4.0.7 sh -lc `
+  'apt-get update -qq && apt-get install -y --no-install-recommends nodejs && gem install bundler -v 4.0.22 --no-document && bundle _4.0.22_ install --jobs 4 --retry 2 && bundle _4.0.22_ exec jekyll serve --host 0.0.0.0 --port 4000 --force_polling'
 ```
 
 Open <http://127.0.0.1:4000/bootstrap5-jekyll-theme/> with the default `baseurl`.
 Use <http://127.0.0.1:4000/> if `baseurl` is empty. The port is available only on
-this computer. The named volume retains gems, and polling detects changes through
-the Windows bind mount. Stop with `docker stop jekyll-theme-preview`.
+this computer. The Ruby 4-specific named volume retains gems separately from
+older Ruby installations, and polling detects changes through
+the Windows bind mount. `BUNDLE_PATH` keeps installed gems in that volume
+instead of the source checkout. Stop with `docker stop jekyll-theme-preview`.
 
 Restart the server after editing [_config.yml](_config.yml). If math renders as
 raw delimiters, confirm Node.js and `kramdown-math-katex` are installed.
@@ -159,12 +168,12 @@ For a safe-mode preview, use `bundle exec jekyll clean` before rebuilding if nee
 
 ### Checking theme changes
 
-After `bundle install`, run the production build and the dependency-free Ruby
+After `bundle _4.0.22_ install`, run the production build and the dependency-free Ruby
 regression checks:
 
 ```shell
-JEKYLL_ENV=production bundle exec jekyll build --safe
-bundle exec ruby tests/theme_test.rb
+JEKYLL_ENV=production bundle _4.0.22_ exec jekyll build --safe
+bundle _4.0.22_ exec ruby tests/theme_test.rb
 ```
 
 In PowerShell, set `$env:JEKYLL_ENV = 'production'` before the build instead of

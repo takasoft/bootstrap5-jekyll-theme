@@ -1,5 +1,7 @@
 source 'https://rubygems.org'
 
+ruby file: '.ruby-version'
+
 # Vanilla Jekyll, not the github-pages gem. Both publishing paths build
 # through GitHub Actions, either to the public fork's own Pages site or a
 # separate public output repo. This allows build-time math in both modes.
@@ -16,7 +18,7 @@ end
 
 # Windows and JRuby do not include zoneinfo files; ship a copy with
 # the build if you develop on Windows.
-platforms :mingw, :x64_mingw, :mswin, :jruby do
+platforms :windows, :jruby do
   gem 'tzinfo', '>= 1', '< 3'
   gem 'tzinfo-data'
 end
